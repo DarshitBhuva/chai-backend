@@ -95,22 +95,84 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
-    //TODO: get video by id
+
+    const video = await Video.findById(videoId)
+
+    if (!video) {
+        throw new ApiError(404, "Video not found");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, video, "Video fetched Successfully")
+    )
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
-    //TODO: update video details like title, description, thumbnail
+    const { title, description, duration } = req.body;
+
+    const video = await Video.findById(videoId);
+
+    if (!video) {
+        throw new ApiError(404, "Video not found");
+    }
+
+    const thumbnailLocalPath = req.file?.path;
+    let thumbnail;
+    if (thumbnailLocalPath) {
+        thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+    }
+
+    let updatedFields = {};
+
+    if(thumbnail)updatedFields.thumbnail = thumbnail;
+    if(title) updatedFields.title = title;
+    if(description) updatedFields.description = description;
+    if(duration) updatedFields.duration = duration;
+
+    const updatedVideo = await findByIdAndUpdate(
+        videoId,
+        {$set : updatedFields},
+        {new: true}
+    )
+
+    return res.status(200).json(
+        new ApiResponse(200, updatedVideo, "Video Updated Successfully")
+    )
 
 })
 
 const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
-    //TODO: delete video
+
+    const video = await Video.findByIdAndDelete(videoId);
+
+    if (!video) {
+        throw new ApiError(404, "Video not found");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, video, "Video deleted Successfully")
+    )
+
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+
+    const video = await Video.findById(videoId)
+
+    if (!video) {
+        throw new ApiError(404, "Video not found");
+    }
+
+    video.isPublished = !video.isPublished;
+    await video.save();
+
+    return res.status(200).json(
+        new ApiResponse(200, video, "Video Updated Successfully")
+    )
+
 })
 
 export {
